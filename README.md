@@ -8,6 +8,10 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16%20Engine-336791.svg?logo=postgresql&logoColor=white)](https://postgresql.org)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB.svg?logo=python&logoColor=white)](https://python.org)
 
+<p align="center">
+  <img src="assets/social_card.png" alt="nod-whatsapp-mesh Enterprise Architecture" width="100%">
+</p>
+
 **Enterprise WhatsApp Baileys Transport, Computer-Use Browser Automation & Microsoft GraphRAG Mesh for n8n Nod (AI Chief of Staff).**
 
 Transform [n8n Nod](https://github.com/n8n-io/nod) into a 24/7 mobile executive assistant on WhatsApp with **deterministic "No Nod, No Action" native interactive poll button approvals**, automated SaaS subscription leak audits, visual **[browser-use](https://github.com/browser-use/browser-use)** computer use, and **[Microsoft GraphRAG](https://github.com/microsoft/graphrag)** knowledge graphs docked into PostgreSQL 16.

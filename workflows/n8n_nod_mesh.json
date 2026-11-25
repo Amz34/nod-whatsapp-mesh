@@ -1,0 +1,182 @@
+{
+  "name": "Nod AI Chief of Staff (WhatsApp + GraphRAG + Computer Use)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "nod-event",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "127b3465-4b0a-4b0d-b1f7-165844b78e79",
+      "name": "WhatsApp Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "nodWebhook01"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "\nconst payload = (.body && typeof .body === \"object\") ? .body : ;\nconst isPollUpdate = payload.pollVote !== undefined || payload.selectedOption !== undefined;\nconst text = String(payload.message || payload.text || \"\").trim().toLowerCase();\nconst chatId = String(payload.chatId || payload.senderId || \"966574268856@s.whatsapp.net\");\n\nlet action = \"unknown\";\nif (isPollUpdate) {\n    action = payload.selectedOption === 0 ? \"poll_approve\" : \"poll_reject\";\n} else if (text.startsWith(\"audit\")) {\n    action = \"audit_sweep\";\n} else if (text.startsWith(\"ask\")) {\n    action = \"graph_query\";\n} else if (text.startsWith(\"browse\")) {\n    action = \"computer_use\";\n} else {\n    action = \"help_status\";\n}\n\nreturn [{ json: { action, isPollUpdate, rawText: text, chatId, timestamp: new Date().toISOString() } }];\n"
+      },
+      "id": "21de4d08-dc8f-4e5e-8336-2cddeff56401",
+      "name": "Triage Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ .action }}",
+              "rightValue": "poll_approve",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "01978c97-8d06-4d3c-aa55-3878fc96320b",
+      "name": "Action Approved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:3003/send",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ chatId: .chatId, message: \"\u2705 [Tripwire Verified] Action Authorized via WhatsApp Native Poll! Executing task in background.\" }) }}",
+        "options": {}
+      },
+      "id": "0cda313f-58a4-4fbb-ae19-6e1f37e07ee5",
+      "name": "Send Approval Confirmation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        680,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:3003/send",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ chatId: .chatId, message: \"\ud83e\udd16 Nod Chief of Staff: Event received [\" + .action + \"] - processing via Centralized AI Mesh.\" }) }}",
+        "options": {}
+      },
+      "id": "51338ac1-24e8-4ca9-9655-a50ab72c2247",
+      "name": "Send Task Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        680,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, status: \"dispatched\", action: .item.json.action }) }}"
+      },
+      "id": "dfa22381-ba0f-4b62-a861-7c4fdeba6f0c",
+      "name": "Return HTTP 200",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        920,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "WhatsApp Webhook": {
+      "main": [
+        [
+          {
+            "node": "Triage Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Triage Event": {
+      "main": [
+        [
+          {
+            "node": "Action Approved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Action Approved?": {
+      "main": [
+        [
+          {
+            "node": "Send Approval Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Task Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Approval Confirmation": {
+      "main": [
+        [
+          {
+            "node": "Return HTTP 200",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Task Status": {
+      "main": [
+        [
+          {
+            "node": "Return HTTP 200",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true
+}
