@@ -93,9 +93,9 @@ def send_whatsapp_poll(question, options, chat_id=OWNER_JID, selectable_count=1)
 # ==============================================================================
 # JOB 1: Autonomous SaaS & Subscription Leak Hunter
 # ==============================================================================
-def run_subscription_audit():
+def run_subscription_audit(chat_id=OWNER_JID):
     """Scans Gmail receipts, extracts active services, detects price escalations."""
-    print("[*] Initiating Job 1: Autonomous SaaS & Subscription Leak Hunter...")
+    print(f"[*] Initiating Job 1: Autonomous SaaS & Subscription Leak Hunter for {chat_id}...")
     gmail_app_pw = ENV.get("GMAIL_APP_PASSWORD")
     if not gmail_app_pw:
         print("[ERROR] Missing GMAIL_APP_PASSWORD in env", file=sys.stderr)
@@ -166,7 +166,7 @@ def run_subscription_audit():
         f"• *Price Spike Analysis:* All current services verified within baseline limits\n"
         f"• *Status:* Nothing altered or canceled (Tripwire armed)."
     )
-    send_whatsapp_message(summary_text)
+    send_whatsapp_message(summary_text, chat_id=chat_id)
 
     # Dispatch Deterministic Interactive Approval Poll
     poll_question = f"📊 [Nod Audit] Found {count} Subscription Receipts. Select Action:"
@@ -175,16 +175,16 @@ def run_subscription_audit():
         "🛑 Flag Unused for Review",
         "📋 Send Itemized Summary"
     ]
-    poll_sent = send_whatsapp_poll(poll_question, poll_options)
+    poll_sent = send_whatsapp_poll(poll_question, poll_options, chat_id=chat_id)
     print(f"[+] Job 1 Completed. Audit summary & native poll sent: {poll_sent}")
     return True
 
 # ==============================================================================
 # JOB 2: Executive FDE Lead & Candidate Action Desk
 # ==============================================================================
-def run_lead_triage():
+def run_lead_triage(chat_id=OWNER_JID):
     """Audits inbound leads from PostgreSQL, formats evaluation, presents 1-tap poll."""
-    print("[*] Initiating Job 2: Executive FDE Lead & Candidate Action Desk...")
+    print(f"[*] Initiating Job 2: Executive FDE Lead & Candidate Action Desk for {chat_id}...")
     leads = []
     try:
         conn = get_db_connection()
@@ -210,7 +210,7 @@ def run_lead_triage():
         return False
 
     if not leads:
-        send_whatsapp_message("🎯 *[Nod Lead Desk]* No new un-triaged inbound submissions at this time.")
+        send_whatsapp_message("🎯 *[Nod Lead Desk]* No new un-triaged inbound submissions at this time.", chat_id=chat_id)
         return True
 
     latest = leads[0]
@@ -223,7 +223,7 @@ def run_lead_triage():
         f"• *Gateway:* {latest['source']}\n\n"
         f"⚡ *Action Required:* Vote via thumb poll below to dispatch automated response."
     )
-    send_whatsapp_message(lead_summary)
+    send_whatsapp_message(lead_summary, chat_id=chat_id)
 
     # Dispatch Deterministic Interactive Approval Poll
     poll_question = f"🎯 Lead {latest['lead_id']}: {latest['name'][:20]}. What action?"
@@ -232,16 +232,16 @@ def run_lead_triage():
         "📂 Prioritize in Pipeline",
         "📥 Archive Record"
     ]
-    poll_sent = send_whatsapp_poll(poll_question, poll_options)
+    poll_sent = send_whatsapp_poll(poll_question, poll_options, chat_id=chat_id)
     print(f"[+] Job 2 Completed. Lead dossier & native poll sent: {poll_sent}")
     return True
 
 # ==============================================================================
 # JOB 3: Zero-API Headless Browser Monitor
 # ==============================================================================
-def run_headless_web_check(target_url="https://amz34.github.io/dev-requisition/", target_name="Talent Requisition Gateway"):
+def run_headless_web_check(target_url="https://amz34.github.io/dev-requisition/", target_name="Talent Requisition Gateway", chat_id=OWNER_JID):
     """Scrapes target page using native Headless Chromium, checks integrity hash."""
-    print(f"[*] Initiating Job 3: Zero-API Headless Browser Monitor on {target_url}...")
+    print(f"[*] Initiating Job 3: Zero-API Headless Browser Monitor on {target_url} for {chat_id}...")
     temp_dom_file = "/tmp/nod_monitor_dump.html"
     try:
         cmd = [
@@ -280,7 +280,7 @@ def run_headless_web_check(target_url="https://amz34.github.io/dev-requisition/"
             f"• *Checksum:* `{dom_hash}`\n"
             f"• *Integrity:* HTTP 200 OK · Extra-Large Ribbon & Buttons Active."
         )
-        send_whatsapp_message(monitor_text)
+        send_whatsapp_message(monitor_text, chat_id=chat_id)
 
         # Dispatch Deterministic Interactive Approval Poll
         poll_question = f"🔍 [Nod Monitor] {target_name} is Healthy. Action?"
@@ -289,7 +289,7 @@ def run_headless_web_check(target_url="https://amz34.github.io/dev-requisition/"
             "📸 Render Viewport Snapshot",
             "⏱️ Change Check Interval"
         ]
-        poll_sent = send_whatsapp_poll(poll_question, poll_options)
+        poll_sent = send_whatsapp_poll(poll_question, poll_options, chat_id=chat_id)
         print(f"[+] Job 3 Completed. Monitor report & native poll sent: {poll_sent}")
         return True
     except Exception as e:
@@ -324,41 +324,75 @@ def run_daemon():
             with urllib.request.urlopen(req, timeout=5) as resp:
                 messages = json.loads(resp.read().decode("utf-8"))
                 for msg in messages:
-                    # Check for poll vote
-                    if msg.get("event") == "poll_update" or "selectedOptions" in msg:
-                        options = msg.get("selectedOptions", [])
-                        print(f"[POLL VOTE DETECTED] Option selected: {options}")
+                    target_chat = msg.get("chatId") or msg.get("senderId") or OWNER_JID
+                    print(f"[{datetime.utcnow().isoformat()}] INBOUND MESSAGE from {target_chat}: {json.dumps(msg)}")
+
+                    # 1. Check for poll vote
+                    is_poll_update = (
+                        msg.get("mediaType") == "poll_update"
+                        or msg.get("event") == "poll_update"
+                        or "selectedOptions" in msg
+                        or "pollUpdate" in msg.get("nativeMetadata", {})
+                    )
+                    if is_poll_update:
+                        options = (
+                            msg.get("nativeMetadata", {}).get("pollUpdate", {}).get("selectedOptions")
+                            or msg.get("selectedOptions")
+                            or ([msg.get("body")] if msg.get("body") and not msg.get("body").startswith("[Poll") else [])
+                        )
+                        print(f"[POLL VOTE DETECTED] Options: {options}")
                         if options:
                             selected = options[0]
-                            send_whatsapp_message(f"⚡ *[Nod Tripwire]* Executing your approved choice: *'{selected}'*")
-                            # Log approval to DB
-                            conn = get_db_connection()
-                            cur = conn.cursor()
-                            cur.execute("""
-                                INSERT INTO nod_audit_log (action_type, job_name, details, approval_status, approved_by)
-                                VALUES ('poll_vote', 'user_approval', %s, 'approved', %s);
-                            """, (json.dumps({"selection": selected}), OWNER_PHONE))
-                            conn.commit()
-                            conn.close()
+                            send_whatsapp_message(f"⚡ *[Nod Tripwire]* Executing your approved choice: *'{selected}'*", chat_id=target_chat)
+                            try:
+                                conn = get_db_connection()
+                                cur = conn.cursor()
+                                cur.execute("""
+                                    INSERT INTO nod_audit_log (action_type, job_name, details, approval_status, approved_by)
+                                    VALUES ('poll_vote', 'user_approval', %s, 'approved', %s);
+                                """, (json.dumps({"selection": selected, "chatId": target_chat}), OWNER_PHONE))
+                                conn.commit()
+                                conn.close()
+                            except Exception as dbe:
+                                print(f"[WARN] Audit log insert failed: {dbe}", file=sys.stderr)
+                        continue
 
-                    # Check for text commands
-                    body = (msg.get("message") or msg.get("text") or "").strip().lower()
+                    # 2. Check for text commands
+                    raw_body = msg.get("body") or msg.get("message") or msg.get("text") or ""
+                    body = raw_body.strip().lower()
                     if body:
-                        print(f"[INBOUND TEXT] {body}")
+                        print(f"[INBOUND TEXT] '{body}' from {target_chat}")
                         if "audit" in body or "subscription" in body:
-                            run_subscription_audit()
+                            run_subscription_audit(chat_id=target_chat)
                         elif "lead" in body or "candidate" in body:
-                            run_lead_triage()
+                            run_lead_triage(chat_id=target_chat)
                         elif "monitor" in body or "check" in body:
-                            run_headless_web_check()
+                            run_headless_web_check(chat_id=target_chat)
                         elif "help" in body:
-                            send_whatsapp_message("Commands available: 'audit' (check receipts), 'leads' (triage submissions), 'monitor' (browser check).")
+                            send_whatsapp_message(
+                                "🤖 *[Nod Commands]*\n\n"
+                                "• *audit* — Scans SaaS & cloud receipts\n"
+                                "• *leads* — Triages candidate/partner submissions\n"
+                                "• *monitor* — Runs headless browser DOM checks",
+                                chat_id=target_chat
+                            )
+                        else:
+                            send_whatsapp_message(
+                                f"🤖 *[Nod AI Chief of Staff]*\n"
+                                f"Received: *\"{raw_body}\"*\n\n"
+                                f"Available commands:\n"
+                                f"• *audit* — Scan SaaS & subscription receipts\n"
+                                f"• *leads* — Triage incoming candidate/partner briefs\n"
+                                f"• *monitor* — Headless Chrome web check\n\n"
+                                f"Reply with any command above to proceed.",
+                                chat_id=target_chat
+                            )
 
         except Exception as e:
             # Silence routine long-poll timeouts
             pass
 
-        time.sleep(2)
+        time.sleep(1)
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
