@@ -1,5 +1,6 @@
 psycopg2-binary>=2.9.9
 browser-use>=1.0.8
+pydantic-ai>=0.0.19
 langchain-google-genai>=4.4.0
 requests>=2.31.0
 python-dotenv>=1.0.0
