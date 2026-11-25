@@ -1,0 +1,25 @@
+services:
+  whatsapp-bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile.bridge
+    container_name: nod-whatsapp-bridge
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3003:3003"
+    volumes:
+      - ./session:/app/session
+
+  nod-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile.engine
+    container_name: nod-autonomous-engine
+    restart: unless-stopped
+    depends_on:
+      - whatsapp-bridge
+    environment:
+      - WHATSAPP_BRIDGE_URL=http://whatsapp-bridge:3003
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./data:/app/data

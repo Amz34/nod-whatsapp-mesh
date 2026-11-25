@@ -1,0 +1,29 @@
+{
+  "name": "nod-whatsapp-mesh",
+  "version": "1.0.0",
+  "description": "Enterprise WhatsApp Baileys Transport & Native Poll Approval Mesh for n8n Nod",
+  "main": "src/whatsapp_bridge.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/whatsapp_bridge.js",
+    "bridge": "node src/whatsapp_bridge.js --port 3003"
+  },
+  "keywords": [
+    "n8n",
+    "nod",
+    "whatsapp",
+    "baileys",
+    "ai-agent",
+    "chief-of-staff",
+    "computer-use",
+    "poll-approvals"
+  ],
+  "author": "Engr. Aamir Zameer <https://github.com/Amz34>",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.18",
+    "express": "^4.21.2",
+    "pino": "^9.6.0",
+    "qrcode-terminal": "^0.12.0"
+  }
+}

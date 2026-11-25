@@ -1,0 +1,10 @@
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+*.sock
+*.log
+.env
+session/
+auth_info/
+.DS_Store
