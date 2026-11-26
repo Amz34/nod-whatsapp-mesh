@@ -143,3 +143,7 @@ The safety engine enforces a physical thumb approval gate:
 Licensed under the **Apache License 2.0**. See [LICENSE](LICENSE) for details.
 
 Developed with ❤️ by **[Engr. Aamir Zameer](https://github.com/Amz34)**.
+
+---
+
+Part of [my always-on agent stack](https://github.com/Amz34) · [Awesome Agent Infrastructure](https://github.com/Amz34/awesome-agent-infrastructure) (135 live-checked building blocks).
